@@ -35,9 +35,6 @@ library(naniar)
 library(UpSetR)
 
 # set working directory
-# option A: open material as project
-# option B: set working directory for da_case_studies
-#           example: setwd("C:/Users/bekes.gabor/Documents/github/da_case_studies/")
 getwd()
 setwd("/Users/Virág/Documents/CEU/2nd year/Thesis/Dataman_thesis")
 
@@ -88,6 +85,7 @@ colnames(wb)[4] <- "year"
 
 write.csv(wb, paste(data_out, 'WB_data_1020.csv', sep = "/"), row.names = FALSE)
 
+#################################################################
 # 1.2 IMF data
 
 #install.packages("readxl")
@@ -119,8 +117,108 @@ IMF_work <- IMF_sset %>%
 
 class(IMF_work$rev_enddate)
 
-IMF_work2 <- IMF_work %>%
-  as.POSIXct(rev_enddate,
-             format="%Y-%m-%dT%H:%M") #format time %>%
-  #mutate(rev_endyr = format(rev_enddate, "%Y"))
+library(lubridate)
+
+parse_date_time(IMF_work$rev_enddate, orders = "ymd")
+
+# we put the dates into Date format and create a new variable for extracting the 
+# year from it
+IMF_work$rev_enddate <- as.Date(IMF_work$rev_enddate)
+class(IMF_work$rev_enddate)
+
+IMF_work$rev_endyear <- year(IMF_work$rev_enddate)
+
+IMF_work <- IMF_work %>%
+  mutate(rev_endyr = year(rev_enddate)) %>%
+  # mutate(real_endyr =  in_endyr) #%>%
+  mutate(real_endyr = ifelse(is.na(rev_endyr), in_endyr, rev_endyr))
+
+# delete revise and initial date variables
+IMF_work <- subset(IMF_work, select = -c(rev_enddate, rev_endyr, in_enddate, in_endyr))
+
+# add ISO-3 character country codes for merging
+#install.packages("countrycode")
+library(countrycode)
+
+IMF_work$iso3code <- countrycode(IMF_work$cname, origin = 'country.name', destination = 'iso3c') 
+
+IMF_work$iso3code[IMF_work$cname == 'KOSOVO, REPUBLIC OF'] <- 'XKX'
+IMF_work$iso3code[IMF_work$cname == 'SERBIA AND MONTENEGRO'] <- 'SCG'
+
+# expand dataframe
+colnames(IMF_work)
+
+exp_IMF <- rowwise(IMF_work) %>% 
+  do(tibble(arr_nr = .$arr_nr, cname=.$cname, arrtype = .$arrtype, apprdate = .$apprdate,
+            iso3code=.$iso3code, prtype=.$prtype, revtype=.$revtype, revseq=.$revseq, t_access=.$t_access,
+            con_textbox=.$con_textbox, del_by=.$del_by, canc=.$canc, comments=.$comments, 
+            z=.$appryr:.$real_endyr))
+
+#save data file -- it contains only those countries and years where programs were
+# undergoing!!! does not cover all years!
+write.csv(exp_IMF, paste(data_out, 'IMF_MONA.csv', sep = "/"), row.names = FALSE)
+
+#####################################################################
+# 1.3
+# additional data from quota revision file
+
+excel_sheets(paste(data_in,"Q_shares_IMF.xlsx", sep= "/"))
+
+quotash <- read_excel(paste(data_in,"Q_shares_IMF.xlsx", sep= "/"), sheet = 1)
+
+colnames(quotash)
+names(quotash) <- c("country", "quotas_bef", "quotas_aft")
+
+
+?codelist
+quotash$ccode <- countrycode(quotash$country, origin = 'country.name', destination = 'iso3c') 
+
+quotash$ccode[quotash$country == 'Kosovo'] <- 'XKX'
+quotash$ccode[quotash$country == 'Micronesia, FS of'] <- 'FSM'
+
+#add year column to quotash
+year = c("2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019",
+         "2020")
+
+quotash <- quotash %>%
+  group_by(ccode) %>%
+  mutate(yr_st = "2011") %>%
+  mutate(yr_end = "2020")
+
+#install.packages("reshape")
+#library(reshape)
+
+exp_quotash <- rowwise(quotash) %>% 
+  do(tibble(ccode = .$ccode, quotas_bef=.$quotas_bef, quotas_aft = .$quotas_aft,
+                z=.$yr_st:.$yr_end))
+
+# spread quota columns across years
+sp_quotash <- exp_quotash %>%
+  group_by(ccode) %>%
+  mutate(quotash = ifelse(z <= 2015, quotas_bef, quotas_aft))
+
+# delete quotash before and after columns
+sp_quotash <- subset(sp_quotash, select = -c(quotas_bef, quotas_aft))
+
+
+#IMF_m <- merge(x = exp_IMF, y = sp_quotash,
+#                 by.x = c("iso3code", "z"),
+#                 by.y=c("ccode", "z"),
+#                 all.x = TRUE)
+
+# save datafile
+write.csv(sp_quotash, paste(data_out, 'quotashares1120.csv', sep = "/"), row.names = FALSE)
+
+#--------------------------------------------------------------------
+# I./2. political
+
+# 2.1 Pol. proximity to US and China
+data_raw <- read.csv(paste(data_in, "NFA 2018.csv", sep = ""))
+
+
+
+
+
+
+
 
