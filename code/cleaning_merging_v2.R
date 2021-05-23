@@ -33,6 +33,8 @@ library(Hmisc)
 library(naniar)
 #install.packages("UpSetR")
 library(UpSetR)
+library(dplyr)
+library(tidyr)
 
 # set working directory
 getwd()
@@ -220,6 +222,74 @@ UNV_work <- UNV %>%
 
 # save datafile
 write.csv(UNV_work, paste(data_out, 'UNV_work.csv', sep = "/"), row.names = FALSE)
+
+UNV_work <- read.csv(paste(data_out, 'UNV_work.csv', sep = ""))
+
+# give 1 per vote if same as US (or China), 0 if not, 0.5 if abstain or absent
+
+#US
+UNV_work <- UNV_work %>%
+  group_by(resid) %>%
+  mutate(same_US = ifelse((vote == "2") | (vote == "8") | (vote == "9"),
+                          0.5, 0)) %>%
+  mutate(same_US = ifelse((vote[Country == "USA"] == vote) & (same_US[Country == "USA"] != "0.5"),
+                          1, ifelse((vote == "2") | (vote == "8") | (vote == "9"),
+                                    0.5, 0)))
+  
+# China
+UNV_work <- UNV_work %>%
+  group_by(resid) %>%
+  mutate(same_CHN = ifelse((vote == "2") | (vote == "8") | (vote == "9"),
+                          0.5, 0)) %>%
+  mutate(same_CHN = ifelse((vote[Country == "CHN"] == vote) & (same_US[Country == "CHN"] != "0.5"),
+                          1, ifelse((vote == "2") | (vote == "8") | (vote == "9"),
+                                    0.5, 0)))
+
+ # calculate average points per year from these
+UNV_work <- UNV_work %>%
+  group_by(year, Country) %>%
+  mutate(meanv_US = mean(same_US)) %>%
+  mutate(meanv_CHN = mean(same_CHN)) %>%
+  ungroup() %>%
+  mutate(iso3code = countrycode(Countryname, origin = 'country.name', destination = 'iso3c'))
+  
+UNV_work$iso3code[UNV_work$Countryname == 'Serbia and Montenegro'] <- 'SCG'
+UNV_work$iso3code[UNV_work$Countryname == 'Yugoslavia'] <- 'YUG'
+
+#put the necessary vars into a new dataframe
+UNV_means <- UNV_work %>%
+  group_by(year, iso3code) %>%
+  filter(row_number(meanv_US) == 1) %>%
+  subset(select = c("member", "vote", "Countryname", "year", "iso3code",
+                     "meanv_US", "meanv_CHN"))
+
+
+# save data
+write.csv(UNV_work, paste(data_out, 'UNV_work.csv', sep = "/"), row.names = FALSE)
+
+write.csv(UNV_means, paste(data_out, 'UNV_means.csv', sep = "/"), row.names = FALSE)
+
+#UNV_means <- read.csv(paste(data_out, 'UNV_means.csv', sep = ""))
+
+#######################################################################
+#2.2 V-Dem electoral democracy
+
+vdem <- read.csv(paste(data_in, 'V-Dem-CY-Core-v11.1.csv', sep = ""))
+
+colnames(vdem)
+
+vdem <- vdem %>%
+  filter(year >= 2010) %>%
+  subset(select = c("country_name", "year", "country_id", "COWcode", 
+                    "v2x_polyarchy")) %>%
+  mutate(iso3code = countrycode(COWcode, origin = 'cown', destination = 'iso3c'))
+
+vdem$iso3code[vdem$COWcode == '345'] <- 'YUG'
+vdem$iso3code[vdem$COWcode == '347'] <- 'XKX'
+vdem$iso3code[vdem$COWcode == '511'] <- 'TZA'
+
+write.csv(vdem, paste(data_out, 'UNV_work.csv', sep = "/"), row.names = FALSE)
+
 
 
 
