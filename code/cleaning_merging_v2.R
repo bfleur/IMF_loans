@@ -288,8 +288,43 @@ vdem$iso3code[vdem$COWcode == '345'] <- 'YUG'
 vdem$iso3code[vdem$COWcode == '347'] <- 'XKX'
 vdem$iso3code[vdem$COWcode == '511'] <- 'TZA'
 
-write.csv(vdem, paste(data_out, 'UNV_work.csv', sep = "/"), row.names = FALSE)
+write.csv(vdem, paste(data_out, 'vdem.csv', sep = "/"), row.names = FALSE)
 
+########################################################################
+# 2.3 WITS trade data
+# first we load IM and EX data, add GDP data and calculate bilateral trade with
+# US and China respective to the member's GDP
+
+# WITS IM USA
+excel_sheets(paste(data_in,"US_IM_0018_WITS.xlsx", sep= "/"))
+
+IM_US <- read_excel(paste(data_in,"US_IM_0018_WITS.xlsx", sep= "/"), sheet = 2)
+
+year_col <- c('2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', 
+              '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017',
+              '2018')
+
+IM_US_l <- IM_US %>% 
+  pivot_longer(all_of(year_col), names_to = "year", values_to = "IM")
+
+#filter the data for year and keep only the necessary vars
+colnames(IM_US_l)
+
+names(IM_US_l) <- c("reporter", "partner", "tradefl", "product", "indic", "yr",
+                    "IM_toUS")
+
+IM_US_l <- IM_US_l %>%
+  filter(yr >= 2010) %>%
+  subset(select = c("partner", "yr", "indic", "IM_toUS")) %>%
+  mutate(iso3code = countrycode(partner, origin = 'country.name', destination = 'iso3c'))
+
+IM_US_l$iso3code[IM_US_l$partner == 'Ethiopia(excludes Eritrea)'] <- 'ETH'
+IM_US_l$iso3code[IM_US_l$partner == 'Fr. So. Ant. Tr'] <- 'ATF'
+IM_US_l$iso3code[IM_US_l$partner == 'Occ.Pal.Terr'] <- 'PSE'
+IM_US_l$iso3code[IM_US_l$partner == 'Serbia, FR(Serbia/Montenegro)'] <- 'SCG'
+
+
+# delete: Netherlands Antilles, Other Asia, nes, 
 
 
 
