@@ -160,6 +160,7 @@ exp_IMF <- rowwise(IMF_work) %>%
             iso3code=.$iso3code, prtype=.$prtype, revtype=.$revtype, revseq=.$revseq, t_access=.$t_access,
             con_textbox=.$con_textbox, del_by=.$del_by, canc=.$canc, comments=.$comments, 
             z=.$appryr:.$real_endyr))
+  
 
 #save data file -- it contains only those countries and years where programs were
 # undergoing!!! does not cover all years!
@@ -539,7 +540,8 @@ colnames(US_aid_huge)
 US_aid <- US_aid_huge %>%
   filter((fiscal_year > "2009") & (fiscal_year < "2020")) %>%
   subset(select = c(country_code, country_name, assistance_category_name,
-                    transaction_type_name, fiscal_year, constant_amount, 
+                    transaction_type_name, fiscal_year, constant_amount,
+                    current_amount, 
                     activity_start_date, activity_end_date, assistance_category_id))
 
 #save datafiles
