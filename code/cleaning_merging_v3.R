@@ -35,6 +35,10 @@ library(naniar)
 library(UpSetR)
 library(dplyr)
 library(tidyr)
+library(readxl)
+library(lubridate)
+library(countrycode)
+
 
 # set working directory
 getwd()
@@ -542,8 +546,38 @@ write.csv(US_aid, paste(data_out, 'US_aid.csv', sep = "/"), row.names = FALSE)
 
 ########################################################################
 # 2.5 UN SC data
+excel_sheets(paste(data_in,"UNSCdata_Dreher.xls", sep= "/"))
 
+UNSC_raw <- read_excel(paste(data_in,"UNSCdata_Dreher.xls", sep= "/"), sheet = 2)
 
+UNSC <- UNSC_raw %>%
+  filter(year > 2009) %>%
+  mutate(code = na_if(code, ".")) %>%
+  mutate(unsc = na_if(unsc, ".")) %>%
+  subset(select = -c(aclpcode)) 
 
+# we drop the "code" variable as it contains many missing country codes, instead
+# we recreate it
+gg_miss_var(UNSC, show_pct = TRUE)
 
+UNSC <- UNSC %>%
+  subset(select = -c(code)) %>%
+  mutate(iso3code = countrycode(aclpname, origin = 'country.name', destination = 'iso3c'))
+
+UNSC$iso3code[UNSC$aclpname == 'Yugoslavia'] <- 'YUG'
+
+# drop observations where no ISO3 codes could be found, neither by the package,
+# nor manually (as those countries are not existing anymore, or are not recognized
+# internationally (i.e. Somaliland))
+UNSC <- UNSC %>%
+  filter((aclpname != "Germany, East") & (aclpname != "Somaliland") &
+           (aclpname != "Yemen Arab Republic") & (aclpname != "Czechoslovakia") &
+           (aclpname != "Yemen PDR (South)") & (aclpname != "Yugoslavia") &
+           (aclpname != "Yugoslavia2"))
+
+gg_miss_var(UNSC, show_pct = TRUE)
+# no missing values
+
+# save data file
+write.csv(UNSC, paste(data_out, 'UNSC.csv', sep = "/"), row.names = FALSE)
 
