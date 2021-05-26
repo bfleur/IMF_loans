@@ -166,10 +166,20 @@ unique(US_aid[c("transaction_type_name")])
 unique(US_aid[c("fiscal_year")])
 # year 2010 is missing (Oct 2010 - sept 2011)
 
-US_aid_dis <- US_aid %>%
-  filter(transaction_type_name == "Disbursements")
 
-# there are apparently more obs per year - should be summarized
+
+US_aid_dis <- US_aid %>%
+  filter(transaction_type_name == "Disbursements") %>%
+  mutate(activity_start_date = na_if(activity_start_date, "NULL"),
+         activity_end_date = na_if(activity_end_date, "NULL")) %>%
+  group_by(fiscal_year, country_code) %>%
+  summarise(USaid_current = sum(current_amount),
+            USaid_constant = sum(constant_amount))
+
+# check if summarise did the right thing
+sum(US_aid$current_amount[(US_aid$country_code == 'AFG') &
+                        (US_aid$fiscal_year == '2011') &
+                        (US_aid$transaction_type_name == 'Disbursements')])
 
 merged_raw6 <- merge(x = merged_raw5, y = US_aid_dis,
                      by.x = c("iso3c", "year"),
@@ -178,11 +188,9 @@ merged_raw6 <- merge(x = merged_raw5, y = US_aid_dis,
 
 colnames(merged_raw6)
 
-merged_raw6 <- merged_raw6 %>%
-  subset(select = -c(partner))
 
 # 7.
-merged_raw7 <- merge(x = merged_raw5, y = UNSC,
+merged_raw7 <- merge(x = merged_raw6, y = UNSC,
                      by.x = c("iso3c", "year"),
                      by.y=c("iso3code", "year"),
                      all.x = TRUE)
@@ -202,6 +210,9 @@ write.csv(merged_raw3, paste(data_out, 'merged_raw3.csv', sep = "/"), row.names 
 write.csv(merged_raw4, paste(data_out, 'merged_raw4.csv', sep = "/"), row.names = FALSE)
 
 write.csv(merged_raw5, paste(data_out, 'merged_raw5.csv', sep = "/"), row.names = FALSE)
+merged_raw5 <- read.csv(paste(data_out, "merged_raw5.csv", sep = ""))
+
+write.csv(merged_raw6, paste(data_out, 'merged_raw6.csv', sep = "/"), row.names = FALSE)
 
 write.csv(merged_raw7, paste(data_out, 'merged_raw7.csv', sep = "/"), row.names = FALSE)
 
