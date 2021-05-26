@@ -82,7 +82,7 @@ UNV_means <- read.csv(paste(data_out, "UNV_means.csv", sep = ""))
 vdem <- read.csv(paste(data_out, "vdem.csv", sep = ""))
 
 # WITS economic proximity
-trade_US_CHN_f <- read.csv(paste(data_out, "econ_proxim_US_CHN.csv", sep = ""))
+trade_US_CHN <- read.csv(paste(data_out, "eshares_US_CHN.csv", sep = ""))
 
 # US aid data
 US_aid <- read.csv(paste(data_out, "US_aid.csv", sep = ""))
@@ -125,7 +125,14 @@ merged_raw2 <- merged_raw2 %>%
   subset(select = -c(cname, revtype, revseq, con_textbox, del_by)) %>%
   mutate(IMF_program = ifelse(is.na(arr_nr), 0, 1),
          avg_part_yr = 5 * (rollmean(IMF_program, k = 5, fill = NA))) %>%
-  filter(year > 2010 & year < 2020)
+  filter(year > 2010 & year < 2020) #%>%
+  #group_by(iso3c) %>%
+  #mutate(avg_yr_loansize = t_access/nrow(arr_nr))
+  #mutate(arr_dist = count(factor(arr_nr)))
+
+merged_raw2 %>%
+  group_by(iso3c) %>%
+  count(factor(arr_nr))
 
 # 3.
 merged_raw3 <- merge(x = merged_raw2, y = UNV_means,
@@ -151,7 +158,7 @@ merged_raw4 <- merged_raw4 %>%
   rename(el_democr = v2x_polyarchy)
 
 # 5.
-merged_raw5 <- merge(x = merged_raw4, y = trade_US_CHN_f,
+merged_raw5 <- merge(x = merged_raw4, y = trade_US_CHN,
                      by.x = c("iso3c", "year"),
                      by.y=c("iso3code", "yr"),
                      all.x = TRUE)
@@ -164,17 +171,17 @@ merged_raw5 <- merged_raw5 %>%
 # 6.
 unique(US_aid[c("transaction_type_name")])
 unique(US_aid[c("fiscal_year")])
-# year 2010 is missing (Oct 2010 - sept 2011)
-
+# year 2010 (Oct 2009 - sept 2010), year 2011 (Oct 2010 - Sept 2011) etc.
 
 
 US_aid_dis <- US_aid %>%
   filter(transaction_type_name == "Disbursements") %>%
-  mutate(activity_start_date = na_if(activity_start_date, "NULL"),
-         activity_end_date = na_if(activity_end_date, "NULL")) %>%
   group_by(fiscal_year, country_code) %>%
   summarise(USaid_current = sum(current_amount),
-            USaid_constant = sum(constant_amount))
+            USaid_constant = sum(constant_amount)) %>%
+  mutate(sh_aid = USaid_constant/sum(USaid_constant),
+         sumaid = sum(USaid_constant)) %>%
+  subset(select = -c(USaid_current, USaid_constant, sumaid))
 
 # check if summarise did the right thing
 sum(US_aid$current_amount[(US_aid$country_code == 'AFG') &
@@ -187,7 +194,6 @@ merged_raw6 <- merge(x = merged_raw5, y = US_aid_dis,
                      all.x = TRUE)
 
 colnames(merged_raw6)
-
 
 # 7.
 merged_raw7 <- merge(x = merged_raw6, y = UNSC,
@@ -202,12 +208,14 @@ merged_raw7 <- merged_raw7 %>%
 
 # saving datafiles
 write.csv(merged_raw, paste(data_out, 'merged_raw.csv', sep = "/"), row.names = FALSE)
+merged_raw <- read.csv(paste(data_out, "merged_raw.csv", sep = ""))
 
 write.csv(merged_raw2, paste(data_out, 'merged_raw2.csv', sep = "/"), row.names = FALSE)
 
 write.csv(merged_raw3, paste(data_out, 'merged_raw3.csv', sep = "/"), row.names = FALSE)
 
 write.csv(merged_raw4, paste(data_out, 'merged_raw4.csv', sep = "/"), row.names = FALSE)
+merged_raw4 <- read.csv(paste(data_out, "merged_raw4.csv", sep = ""))
 
 write.csv(merged_raw5, paste(data_out, 'merged_raw5.csv', sep = "/"), row.names = FALSE)
 merged_raw5 <- read.csv(paste(data_out, "merged_raw5.csv", sep = ""))
