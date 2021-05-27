@@ -46,11 +46,6 @@ getwd()
 setwd("/Users/Virág/Documents/CEU/2nd year/Thesis/Dataman_thesis")
 
 
-# set data dir, data used
-#source("set-data-directory.R")             # data_dir must be first defined 
-# alternative: give full path here, 
-#            example data_dir="C:/Users/bekes.gabor/Dropbox (MTA KRTK)/bekes_kezdi_textbook/da_data_repo"
-
 data_dir= "/Users/Virág/Documents/CEU/2nd year/Thesis/Dataman_thesis/data/"
 
 # load theme and functions
@@ -125,14 +120,22 @@ merged_raw2 <- merged_raw2 %>%
   subset(select = -c(cname, revtype, revseq, con_textbox, del_by)) %>%
   mutate(IMF_program = ifelse(is.na(arr_nr), 0, 1),
          avg_part_yr = 5 * (rollmean(IMF_program, k = 5, fill = NA))) %>%
-  filter(year > 2010 & year < 2020) #%>%
-  #group_by(iso3c) %>%
-  #mutate(avg_yr_loansize = t_access/nrow(arr_nr))
-  #mutate(arr_dist = count(factor(arr_nr)))
+  filter(year > 2010 & year < 2020)
 
-merged_raw2 %>%
+helptable_IMF <- merged_raw2 %>%
   group_by(iso3c) %>%
   count(factor(arr_nr))
+
+helptable_IMF <- helptable_IMF[complete.cases(helptable_IMF), ]
+
+merged_raw2 <- merge(x = merged_raw2, y = helptable_IMF,
+                     by.x = c("iso3c", "arr_nr"),
+                     by.y=c("iso3c", "factor(arr_nr)"),
+                     all.x = TRUE)
+
+merged_raw2 <- merged_raw2 %>%
+  mutate(avg_yr_loansize = log(t_access/n)) %>%
+  subset(select = -c(n))
 
 # 3.
 merged_raw3 <- merge(x = merged_raw2, y = UNV_means,
@@ -208,17 +211,17 @@ merged_raw7 <- merged_raw7 %>%
 
 # saving datafiles
 write.csv(merged_raw, paste(data_out, 'merged_raw.csv', sep = "/"), row.names = FALSE)
-merged_raw <- read.csv(paste(data_out, "merged_raw.csv", sep = ""))
+#merged_raw <- read.csv(paste(data_out, "merged_raw.csv", sep = ""))
 
 write.csv(merged_raw2, paste(data_out, 'merged_raw2.csv', sep = "/"), row.names = FALSE)
 
 write.csv(merged_raw3, paste(data_out, 'merged_raw3.csv', sep = "/"), row.names = FALSE)
 
 write.csv(merged_raw4, paste(data_out, 'merged_raw4.csv', sep = "/"), row.names = FALSE)
-merged_raw4 <- read.csv(paste(data_out, "merged_raw4.csv", sep = ""))
+#merged_raw4 <- read.csv(paste(data_out, "merged_raw4.csv", sep = ""))
 
 write.csv(merged_raw5, paste(data_out, 'merged_raw5.csv', sep = "/"), row.names = FALSE)
-merged_raw5 <- read.csv(paste(data_out, "merged_raw5.csv", sep = ""))
+#merged_raw5 <- read.csv(paste(data_out, "merged_raw5.csv", sep = ""))
 
 write.csv(merged_raw6, paste(data_out, 'merged_raw6.csv', sep = "/"), row.names = FALSE)
 
