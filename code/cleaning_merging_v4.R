@@ -83,14 +83,15 @@ my_wb_indicators <- c(
   std_totald = "DT.DOD.DSTC.ZS",
   gdpdefl = "NY.GDP.DEFL.KD.ZG.AD",
   ex_rate = "PA.NUS.FCRF",
-  gdp_cusd = "NY.GDP.MKTP.CD"
+  pop = "SP.POP.TOTL"
 )
 
 wb <- wb_data(my_wb_indicators, start_date = 2010, end_date = 2020)
 
+colnames(wb)
 colnames(wb)[4] <- "year"
 
-write.csv(wb, paste(data_out, 'WB_data_1020.csv', sep = "/"), row.names = FALSE)
+write.csv(wb, paste(data_out, 'WB_data_1020_pop.csv', sep = "/"), row.names = FALSE)
 
 #################################################################
 # 1.2 IMF data
@@ -488,18 +489,30 @@ write.csv(trade_US_CHN, paste(data_out, 'eshares_US_CHN.csv', sep = "/"), row.na
 ########################################################################
 # 2.4 China lends and US aid data
 
-# CHINA
-excel_sheets(paste(data_in,"China_lends.xlsx", sep= "/"))
+# CHINA BRI (Belt and Road Initiative)
+BRI <- read_excel(paste(data_in,"bri_countries.xlsx", sep= "/"), sheet = 1)
 
-loans_CHN_raw <- read_excel(paste(data_in,"China_lends.xlsx", sep= "/"), sheet = 2)
+BRI_w <- BRI %>%
+  mutate(iso3code = countrycode(country, origin = 'country.name', destination = 'iso3c')) %>%
+  group_by(iso3code) %>%
+  mutate(yr_st = "2011") %>%
+  mutate(yr_end = "2019")
 
-loans_CHN_raw <- loans_CHN_raw %>%
-  subset(select = c(contract_id, china_sample, year, borrower_country, creditor_name,
-                    creditor_type, creditor_country, commitment_USD, project_title)) %>%
-  filter(china_sample == 1)
+BRI_w$iso3code[BRI_w$country == 'Micronesia'] <- 'FSM'
 
-# now the set stretches from 2000 to 2020, and has 100 observations (each obs
-# is one contract between China and a borrower bilaterally)
+# spread additional years across countries, artificially adding new observations
+BRI_w <- rowwise(BRI_w) %>% 
+  do(tibble(iso3code = .$iso3code, year=.$year,
+            z=.$yr_st:.$yr_end))
+
+#adding bri participation dummy, dropping joining year variable
+BRI_w <- BRI_w %>%
+  mutate(BRI_part = ifelse(z >= year, 1, 0)) %>%
+  subset(select = -c(year))
+
+#save datafiles
+write.csv(BRI_w, paste(data_out, 'BRI_part.csv', sep = "/"), row.names = FALSE)
+
 
 # USA
 US_aid_huge <- read.csv(paste(data_in, "us_foreign_aid_complete.csv", sep = ""))
