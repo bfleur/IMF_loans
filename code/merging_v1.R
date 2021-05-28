@@ -62,7 +62,7 @@ create_output_if_doesnt_exist(output)
 # Adding data one by one to merge
 
 # World Bank
-wb <- read.csv(paste(data_out, "WB_data_1020.csv", sep = ""))
+wb <- read.csv(paste(data_out, "WB_data_1020_pop.csv", sep = ""))
 
 # IMF Program participation data
 exp_IMF <- read.csv(paste(data_out, "IMF_MONA.csv", sep = ""))
@@ -85,6 +85,13 @@ US_aid <- read.csv(paste(data_out, "US_aid.csv", sep = ""))
 # UN Security Council
 UNSC <- read.csv(paste(data_out, "UNSC.csv", sep = ""))
 
+# BRI participation dummy
+BRI_w <- read.csv(paste(data_out, "BRI_part.csv", sep = ""))
+
+# text conditionality
+cm_m3 <- read.csv(paste(data_out, "corpus_meta_cond.csv", sep = ""))
+
+
 # merging
 # 1.
 merged_raw <- merge(x = wb, y = sp_quotash,
@@ -95,7 +102,8 @@ merged_raw <- merge(x = wb, y = sp_quotash,
 colnames(merged_raw)
 
 merged_raw <- merged_raw %>%
-  mutate(country_nr = as.integer(factor(iso3c))) %>%
+  mutate(country_nr = as.integer(factor(iso3c)),
+         logpop = log(pop)) %>%
   subset(select = -c(iso2c, country))
 
 # 2.
@@ -187,7 +195,7 @@ US_aid_dis <- US_aid %>%
   subset(select = -c(USaid_current, USaid_constant, sumaid))
 
 # check if summarise did the right thing
-sum(US_aid$current_amount[(US_aid$country_code == 'AFG') &
+sum(US_aid$constant_amount[(US_aid$country_code == 'AFG') &
                         (US_aid$fiscal_year == '2011') &
                         (US_aid$transaction_type_name == 'Disbursements')])
 
@@ -198,7 +206,7 @@ merged_raw6 <- merge(x = merged_raw5, y = US_aid_dis,
 
 colnames(merged_raw6)
 
-# 7.
+# 7. UNSC
 merged_raw7 <- merge(x = merged_raw6, y = UNSC,
                      by.x = c("iso3c", "year"),
                      by.y=c("iso3code", "year"),
@@ -208,6 +216,15 @@ colnames(merged_raw7)
 
 merged_raw7 <- merged_raw7 %>%
   subset(select = -c(aclpname))
+
+# 8. conditionality word and sentence counts per doc type
+merged_raw8 <- merge(x = merged_raw7, y = cm_m3,
+                     by.x = c("iso3c", "year"),
+                     by.y=c("ccode", "year"),
+                     all.x = TRUE)
+
+colnames(merged_raw8)
+
 
 # saving datafiles
 write.csv(merged_raw, paste(data_out, 'merged_raw.csv', sep = "/"), row.names = FALSE)
@@ -226,5 +243,10 @@ write.csv(merged_raw5, paste(data_out, 'merged_raw5.csv', sep = "/"), row.names 
 write.csv(merged_raw6, paste(data_out, 'merged_raw6.csv', sep = "/"), row.names = FALSE)
 
 write.csv(merged_raw7, paste(data_out, 'merged_raw7.csv', sep = "/"), row.names = FALSE)
+merged_raw7 <- read.csv(paste(data_out, "merged_raw7.csv", sep = ""))
+
+write.csv(merged_raw8, paste(data_out, 'merged_raw8.csv', sep = "/"), row.names = FALSE)
+
+write.csv(US_aid_dis, paste(data_out, 'US_aid_dis.csv', sep = "/"), row.names = FALSE)
 
 
