@@ -29,18 +29,19 @@ library(quanteda.textstats)
 library(quanteda.textplots)
 
 
-
-load("/Users/Virág/Documents/CEU/2nd year/Thesis/Dataman_thesis/data/data_in/DMihalyi/Rda-files/program_single_dfm.Rda") # bigram dfm file
-#load("/Users/Virág/Documents/CEU/2nd year/Thesis/Dataman_thesis/data/data_in/DMihalyi/Rda-files/imf_program_corpus.Rda") 
 load("/Users/Virág/Documents/CEU/2nd year/Thesis/Dataman_thesis/data/data_in/DMihalyi/Rda-files/articleiv_corpus_meta.Rda") #meta data file
+
+#load("/Users/Virág/Documents/CEU/2nd year/Thesis/Dataman_thesis/data/data_in/DMihalyi/Rda-files/imf_program_corpus.Rda") 
 load("/Users/Virág/Documents/CEU/2nd year/Thesis/Dataman_thesis/data/data_in/DMihalyi/Rda-files/imf_corpus.Rda") 
+load("/Users/Virág/Documents/CEU/2nd year/Thesis/Dataman_thesis/data/data_in/DMihalyi/Rda-files/program_single_dfm.Rda") # bigram dfm file
 load("/Users/Virág/Documents/CEU/2nd year/Thesis/Dataman_thesis/data/data_in/DMihalyi/Rda-files/imf_articleiv_panel_final.Rda") 
 
 
-str(articleiv_corpus_meta[1])
-str(program_corpus[2])
-str(program_single_dfm)
-str(imf_articleiv_final)
+str(articleiv_corpus_meta[1]) # this is a dataframe
+str(program_corpus[2]) # this is a corpus but without the texts(?)
+str(articleiv_corpus) # this is the largest corpus but without the texts
+str(program_single_dfm) # this is a dfm
+str(imf_articleiv_final) # this is a df containing the texts we need
 
 corpus_meta <- rename(articleiv_corpus_meta, doc_name = Text) %>% 
   filter(type %in% c("Article IV", "IMF program document"))
@@ -59,9 +60,28 @@ head(docvars(articleiv_corpus))
 
 #freq <- findFreqTerms(articleiv_corpus_meta, lowfreq=articleiv_corpus_meta$nrow/100)
 
-frequent_terms <- freq_terms(program_corpus$texts)
+#frequent_terms <- freq_terms(program_corpus$texts)
 
-articleiv_corpus_meta$text
+colnames(imf_articleiv_final)
 
+# break up the strings in each row by " "
+imf_articleiv_work <- imf_articleiv_final %>%
+  filter(type == "Article IV" | type == "IMF program document")
+
+temp <- imf_articleiv_work %>%
+  subset(select = c(ccode, year_p, text)) %>%
+  #strsplit(text, split=" ") %>%
+  #sapply(text, function(x) strsplit(x, split=" "))
+
+imf_articleiv_work$temp <- strsplit(as.character(imf_articleiv_work$text), split=" ")
+
+class(imf_articleiv_work$text)
+imf_articleiv_work$text <- as.character(imf_articleiv_work$text)
+
+lst <- strsplit(trimws(as.character(imf_articleiv_work$text)), "\\s")
+names(lst) <- trimws(df[, 1])
+
+# count the number of words as the length of the vectors
+df$wordCount <- sapply(temp, length)
 
 
