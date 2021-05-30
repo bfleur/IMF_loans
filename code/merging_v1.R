@@ -80,7 +80,7 @@ vdem <- read.csv(paste(data_out, "vdem.csv", sep = ""))
 trade_US_CHN <- read.csv(paste(data_out, "eshares_US_CHN.csv", sep = ""))
 
 # US aid data
-US_aid <- read.csv(paste(data_out, "US_aid.csv", sep = ""))
+US_aid_dis <- read.csv(paste(data_out, "US_aid_dis.csv", sep = ""))
 
 # UN Security Council
 UNSC <- read.csv(paste(data_out, "UNSC.csv", sep = ""))
@@ -103,7 +103,8 @@ colnames(merged_raw)
 
 merged_raw <- merged_raw %>%
   mutate(country_nr = as.integer(factor(iso3c)),
-         logpop = log(pop)) %>%
+         logpop = log(pop),
+         loggdppc = log(gdppc)) %>%
   subset(select = -c(iso2c, country))
 
 # 2.
@@ -142,7 +143,8 @@ merged_raw2 <- merge(x = merged_raw2, y = helptable_IMF,
                      all.x = TRUE)
 
 merged_raw2 <- merged_raw2 %>%
-  mutate(avg_yr_loansize = log(t_access/n)) %>%
+  mutate(avg_yr_loansize = t_access/n) %>%
+  mutate(logavg_yr_loansize = log(t_access/n)) %>%
   subset(select = -c(n))
 
 # 3.
@@ -225,6 +227,14 @@ merged_raw8 <- merge(x = merged_raw7, y = cm_m3,
 
 colnames(merged_raw8)
 
+# 9.
+merged_raw9 <- merge(x = merged_raw8, y = BRI_w,
+                     by.x = c("iso3c", "year"),
+                     by.y=c("iso3code", "z"),
+                     all.x = TRUE)
+
+colnames(merged_raw9)
+
 
 # saving datafiles
 write.csv(merged_raw, paste(data_out, 'merged_raw.csv', sep = "/"), row.names = FALSE)
@@ -243,10 +253,12 @@ write.csv(merged_raw5, paste(data_out, 'merged_raw5.csv', sep = "/"), row.names 
 write.csv(merged_raw6, paste(data_out, 'merged_raw6.csv', sep = "/"), row.names = FALSE)
 
 write.csv(merged_raw7, paste(data_out, 'merged_raw7.csv', sep = "/"), row.names = FALSE)
-merged_raw7 <- read.csv(paste(data_out, "merged_raw7.csv", sep = ""))
+#merged_raw7 <- read.csv(paste(data_out, "merged_raw7.csv", sep = ""))
 
 write.csv(merged_raw8, paste(data_out, 'merged_raw8.csv', sep = "/"), row.names = FALSE)
 
 write.csv(US_aid_dis, paste(data_out, 'US_aid_dis.csv', sep = "/"), row.names = FALSE)
+
+write.csv(merged_raw9, paste(data_out, 'merged_raw9.csv', sep = "/"), row.names = FALSE)
 
 
