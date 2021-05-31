@@ -1,6 +1,6 @@
 # Virag Bitto (ID: 1903164)
 # Thesis
-# FILE 2
+# FILE 3
 # ------------------------------------------------------------------------------------------------------
 # I. setup
 # It is advised to start a new session
@@ -79,7 +79,14 @@ merged_raw9_sum <- merged_raw9 %>%
          meanv_US, meanv_CHN, el_democr, IM_fromUS,
          EX_toUS, IM_fromCHN, EX_toCHN, sh_aid))
 
-summary(merged_raw9_sum)
+sumtable <- do.call(cbind, lapply(merged_raw9_sum, summary))
+sumframe <- data.frame(sumtable)
+
+
+#install.packages("writexl")
+library(writexl)
+
+write_xlsx(sumframe,"sumframe.xlsx")
 
 #install.packages("pastecs")
 library(pastecs)
@@ -103,7 +110,7 @@ library(ggplot2)
 library(ggcorrplot)
 
 corr_df <- merged_raw9_sum %>%
-  subset(select = -c(avg_yr_loansize))
+  subset(select = -c(logavg_yr_loansize))
 
 # Correlation matrix
 #corr <- round(cor(merged_raw8_num), 1)
@@ -132,7 +139,7 @@ merged_raw9 <- merged_raw9 %>%
 max(merged_raw9$country_nr, na.rm=T)
 
 # obs by program type 
-install.packages("summarytools")
+#install.packages("summarytools")
 library(summarytools)
 
 summarytools::freq(merged_raw9$arrtype, order = "freq")
@@ -148,12 +155,22 @@ summarytools::freq(merged_raw9$reform, order = "freq")
 # log loan size
 gplot_loan <- ggplot(merged_raw9, aes(avg_yr_loansize)) + scale_fill_brewer(palette = "Spectral")
 
-gplot_loan + geom_histogram(aes(fill=arrtype), 
-                   binwidth = .3, 
-                   col="black", 
-                   size=.1) +  # change binwidth
-  labs(title="Histogram of log average loansize", 
-       subtitle="across arrangement types")  
+gplot_loan + geom_histogram(bins = 70, fill = "#69b3a2") +  # change binwidth
+  labs(title="Histogram of average loansize", 
+       subtitle="across all arrangement types")  
+
+gplot_loan2 <- merged_raw9 %>%
+  ggplot( aes(x=avg_yr_loansize)) +
+  geom_histogram( bins=70, fill="#69b3a2", color="#e9ecef", alpha=1) +
+  ggtitle("Histogram of average loansize") +
+  #theme_ipsum() +
+  theme(
+    plot.title = element_text(size=15)
+  )
+
+gplot_loan2
+
+#the large one is 2019 Mexico
 
 # number of words
 # for Article IV reports
@@ -166,12 +183,21 @@ gplot_wordcA + geom_histogram() +  # change binwidth
 # for IMF program reports
 gplot_wordcP <- ggplot(merged_raw9, aes(sumstok_P)) #+ scale_fill_brewer(palette = "Spectral")
 
-gplot_wordcP + geom_histogram() +  # change binwidth
+gplot_wordcP + geom_histogram(bins = 70, fill = "#69b3a2") +  # change binwidth
   labs(title="Histogram of sum wordcount", 
        subtitle="for IMF Program reports")  
 
+
 # there is one with extremely large wordcount at GRC
 max(merged_raw9$sumstok_P, na.rm=T)
+
+# number of sent
+# for IMF program reports
+gplot_sentcP <- ggplot(merged_raw9, aes(sumssent_P)) + scale_fill_brewer(palette = "Spectral")
+
+gplot_sentcP + geom_histogram(bins = 70, fill = "#69b3a2") +  # change binwidth
+  labs(title="Histogram of sum sentence count", 
+       subtitle="for IMF Program reports")  
 
 
 #---------------------------------------------------------------------------
@@ -440,6 +466,8 @@ cov <- merged_raw9 %>%
   select(one_of(cov)) %>%
   summarise_all(funs(mean(., na.rm = T)))
 
+print(cov)
+
 # matching
 library(MatchIt)
 # program part
@@ -475,6 +503,7 @@ merged_raw9_matched2 <- match.data(mod_match2)
 
 library(cobalt)
 love.plot(mod_match, stars = "std")
+love.plot(mod_match2, stars = "std")
 
 
 #---------------------------------------------------------------------------
