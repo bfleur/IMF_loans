@@ -892,6 +892,3 @@ stargazer(Did_pp2,Did_ls2,Did_wc2,Did_sc2, title="Summary results on DiD",
 
 
 
-
-
-
