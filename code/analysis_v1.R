@@ -598,28 +598,61 @@ summarytools::freq(merged_raw9$reform, order = "freq")
 # in 635 cases quota shares remained unchanged
 
 
-# balancedness check
+# parallel trend ass check
 # by table
 bal1 <- merged_raw9 %>%
-  group_by(reform) %>%
+  group_by(reform, year) %>%
   summarise(n_obs = n(),
             mean_IMFp = mean(IMF_program),
             std_error_IMFp = sd(IMF_program) / sqrt(n_obs))
 
 bal2 <- merged_raw9 %>%
-  group_by(reform) %>%
+  group_by(reform, year) %>%
   na.omit() %>%
   summarise(n_obs = n(),
             mean_lsize = mean(avg_yr_loansize),
             stderror_lsize = sd(avg_yr_loansize) / sqrt(n_obs))
 
 bal3 <- merged_raw9 %>%
-  group_by(reform) %>%
+  group_by(reform, year) %>%
   na.omit() %>%
   summarise(n_obs = n(),
             mean_stoken = mean(sumstok_P),
             stderror_stoken = sd(sumstok_P) / sqrt(n_obs))
 
+bal4 <- merged_raw9 %>%
+  group_by(reform, year) %>%
+  na.omit() %>%
+  summarise(n_obs = n(),
+            mean_ssent = mean(sumssent_P),
+            stderror_ssent = sd(sumssent_P) / sqrt(n_obs))
+
+# plot
+ggplot(bal1, aes(x = factor(year), y = mean_IMFp,
+                        shape = factor(reform),
+                        linetype = factor(reform))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, col = "black")
+
+ggplot(bal2, aes(x = factor(year), y = mean_lsize,
+                 shape = factor(reform),
+                 linetype = factor(reform))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, col = "black")
+
+ggplot(bal3, aes(x = factor(year), y = mean_stoken,
+                 shape = factor(reform),
+                 linetype = factor(reform))) +
+  geom_point() #+
+  #geom_smooth(method = "lm", se = FALSE, col = "black")
+
+ggplot(bal4, aes(x = factor(year), y = mean_ssent,
+                 shape = factor(reform),
+                 linetype = factor(reform))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, col = "black")
+
+# clearly they do not follow the same trends before the intervention
 
 # See lack of overlap in fig. below
 ggplot(merged_raw9, aes(x = debts_ratio, y = IMF_program,
@@ -641,7 +674,7 @@ ggplot(merged_raw9, aes(x = gdppc_gr, y = IMF_program,
   geom_smooth(method = "lm", se = FALSE, col = "black")
 
 # check on covariates
-cov <- c('loggdppc', 'gdppc_gr', 'res_im', 'debts_ratio', 'pop', 'avg_part_yr', 'meanv_US',
+cov <- c('gdppc', 'gdppc_gr', 'res_im', 'debts_ratio', 'pop', 'avg_part_yr', 'meanv_US',
          'meanv_CHN', 'el_democr', 'EX_toUS', 'IM_fromUS', 'EX_toCHN', 'IM_fromCHN',
          'BRI_part', 'unsc')
 
@@ -671,24 +704,26 @@ merged_raw9_nom2 <- merged_raw9 %>%  # MatchIt does not allow missing values
                     res_im, sh_aid, unsc,
                     debts_ratio, logpop, avg_part_yr, meanv_US,
                     meanv_CHN, el_democr, EX_toUS, IM_fromUS, EX_toCHN, IM_fromCHN,
-                    BRI_part, avg_yr_loansize, avg_yr_loansize, logavg_yr_loansize, 
+                    BRI_part, avg_yr_loansize, logavg_yr_loansize, 
                     sumstok_P, sumssent_P)) %>%
   na.omit()
 
 
-#mod_match <- matchit(reform ~ logpop + el_democr + EX_toUS + IM_fromUS,
-#                     method = "nearest", data = merged_raw9_nomiss)
-
-mod_match <- matchit(reform ~ logpop + el_democr + meanv_US + meanv_CHN,
+mod_match <- matchit(reform ~ logpop + el_democr + IM_fromUS + IM_fromCHN,
                      method = "nearest", data = merged_raw9_nom1)
 
-mod_match2 <- matchit(reform ~ logpop + el_democr + meanv_US + meanv_CHN,
+#mod_match <- matchit(reform ~ logpop + el_democr + meanv_US + meanv_CHN,
+#                     method = "nearest", data = merged_raw9_nom1)
+
+mod_match2 <- matchit(reform ~ logpop + el_democr + IM_fromUS + IM_fromCHN,
                      method = "nearest", data = merged_raw9_nom2)
 
 
 merged_raw9_matched <- match.data(mod_match)
 merged_raw9_matched2 <- match.data(mod_match2)
 
+sum(duplicated(merged_raw9_matched2))
+rownames(merged_raw9_matched2) = make.names(rownames(merged_raw9_matched2), unique=TRUE)
 
 library(cobalt)
 love.plot(mod_match, stars = "std")
@@ -698,9 +733,68 @@ love.plot(mod_match2, stars = "std")
 #---------------------------------------------------------------------------
 # VIII. Diff-in-diff
 
-# parallel trend assumption! - matching takes care of it?
+# add logs
+merged_raw9_matched2 <- merged_raw9_matched2 %>%
+  mutate(logwordc = log(sumstok_P),
+         logsentc = log(sumssent_P))
 
-# add interactions!!
+
+
+# parallel trend assumption! - matching takes care of it?
+bal_diff1 <- merged_raw9_matched %>%
+  group_by(reform, year) %>%
+  summarise(n_obs = n(),
+            mean_IMFp = mean(IMF_program),
+            std_error_IMFp = sd(IMF_program) / sqrt(n_obs))
+
+bal_diff2 <- merged_raw9_matched2 %>%
+  mutate(row = row_number()) %>%
+  group_by(reform, year) %>%
+  summarise(n_obs = n(),
+            mean_lsize = mean(avg_yr_loansize),
+            stderror_lsize = sd(avg_yr_loansize) / sqrt(n_obs))
+
+bal_diff3 <- merged_raw9_matched2 %>%
+  group_by(reform, year) %>%
+  na.omit() %>%
+  mutate(row = row_number()) %>%
+  summarise(n_obs = n(),
+            mean_stoken = mean(sumstok_P),
+            stderror_stoken = sd(sumstok_P) / sqrt(n_obs))
+
+bal_diff4 <- merged_raw9_matched2 %>%
+  group_by(reform, year) %>%
+  na.omit() %>%
+  mutate(row = row_number()) %>%
+  summarise(n_obs = n(),
+            mean_ssent = mean(sumssent_P),
+            stderror_ssent = sd(sumssent_P) / sqrt(n_obs))
+
+# plot
+ggplot(bal_diff1, aes(x = factor(year), y = mean_IMFp,
+                 shape = factor(reform),
+                 linetype = factor(reform))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, col = "black")
+
+ggplot(bal_diff2, aes(x = factor(year), y = mean_lsize,
+                 shape = factor(reform),
+                 linetype = factor(reform))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, col = "black")
+
+ggplot(bal_diff3, aes(x = factor(year), y = mean_stoken,
+                 shape = factor(reform),
+                 linetype = factor(reform))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, col = "black")
+
+ggplot(bal_diff4, aes(x = factor(year), y = mean_ssent,
+                 shape = factor(reform),
+                 linetype = factor(reform))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, col = "black")
+
 
 # program particip
 merged_raw9_matched <- merged_raw9_matched %>%
@@ -710,9 +804,9 @@ merged_raw9_matched <- merged_raw9_matched %>%
 Did_pp1 = glm(IMF_program ~ reform + t + interact, family=binomial(link="logit"), 
               data = merged_raw9_matched)
 
-Did_pp1 <- glm(IMF_program ~ reform + t + interact
+Did_pp2 <- glm(IMF_program ~ reform + t + interact
               + avg_part_yr 
-              + unsc + el_democr, family=binomial(link="logit"), 
+              + meanv_US + meanv_CHN + unsc+ BRI_part, family=binomial(link="logit"), 
               data=merged_raw9_matched)
 
 
@@ -724,8 +818,8 @@ merged_raw9_matched2 <- merged_raw9_matched2 %>%
 Did_ls1 = glm(avg_yr_loansize ~ reform + t + interact, family=poisson(link="log"), 
               data = merged_raw9_matched2)
 
-Did_ls2 <- glm(avg_yr_loansize ~ reform + t + interact + avg_part_yr + logpop,
-               family=poisson(link="log"), data=merged_raw9)
+Did_ls2 <- glm(avg_yr_loansize ~ reform + t + interact + meanv_US + meanv_CHN + unsc + BRI_part,
+               family=poisson(link="log"), data=merged_raw9_matched2)
 
 
 # word and sent count
@@ -735,14 +829,17 @@ Did_ls2 <- glm(avg_yr_loansize ~ reform + t + interact + avg_part_yr + logpop,
 Did_wc1 = glm(sumstok_P ~ reform + t + interact, family=poisson(link="log"), 
               data = merged_raw9_matched2)
 
-Did_wc1 = glm(sumstok_P ~ reform + t + interact + avg_part_yr + logpop, family=poisson(link="log"), 
+Did_wc2 = glm(sumstok_P ~ reform + t + interact + avg_part_yr+ meanv_US + meanv_CHN + unsc
+              + BRI_part, family=poisson(link="log"), 
               data = merged_raw9_matched2)
 
 
 Did_sc1 = glm(sumssent_P ~ reform + t + interact, family=poisson(link="log"), 
               data = merged_raw9_matched2)
 
-Did_sc2 = glm(sumssent_P ~ reform + t + interact + avg_part_yr + logpop, family=poisson(link="log"), 
+Did_sc2 = glm(sumssent_P ~ reform + t + interact + avg_part_yr + meanv_US + meanv_CHN + unsc
+              + BRI_part, 
+              family=poisson(link="log"), 
               data = merged_raw9_matched2)
 
 
@@ -751,20 +848,36 @@ stargazer(Did_pp1,Did_pp2,Did_ls1,Did_ls2,
           title="DiD program part. and loan size regression estimates", type = "text", 
           out='DiDppls.txt')
 
-stargazer(Did_wc1,Did_wc2,Did_sc1,Did_sc1, 
+stargazer(Did_wc1,Did_wc2,Did_sc1,Did_sc2, 
           title="DiD word and sentence count estimates", type = "text", 
           out='DiDwcsc.txt')
 
 # latex output
+stargazer(Did_pp1,Did_pp2,Did_ls1,Did_ls2, title="Results on DiD, participation and loan size",
+          align=TRUE, dep.var.labels=c("Program part.","Loan size"),
+          covariate.labels=c("Reform", "Time dummy",
+                             "DiD estimator","Yrs of particip.","Mean v. c. US",
+                             "Mean v. c. China",
+                             "UNSC membership","BRI part.",
+                             "Constant"),
+          omit.stat=c("LL","ser","f"), font.size = "small", no.space=TRUE)
 
-#stargazer(Did_pp2,Did_ls2,Did_wc2,Did_sc2, title="Summary results on DiD",
+stargazer(Did_wc1,Did_wc2,Did_sc1,Did_sc2, title="Results on DiD, word and sentence counts",
+          align=TRUE, dep.var.labels=c("Word count","Sentence count"),
+          covariate.labels=c("Reform", "Time dummy",
+                             "DiD estimator","Yrs of particip.","Mean v. c. US",
+                             "Mean v. c. China",
+                             "UNSC membership","BRI part.",
+                             "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
+
+
+stargazer(Did_pp2,Did_ls2,Did_wc2,Did_sc2, title="Summary results on DiD",
           align=TRUE, dep.var.labels=c("Program part.","Loan size","Word count","Sentence count"),
-          covariate.labels=c("Log GDP/cap.", "GDP/cap gr",
-                             "Reserves","Debt s. ratio","Quotashare","Yrs of particip.",
-                             "Inflation","El. democracy", "log population",
-                             "UNSC membership", 
-                             "Mean v. c. US", "Ex to US", "IM from US", "Share of aid",
-                             "Mean v. c. China", "EX to China","IM from China","BRI part.",
+          covariate.labels=c("Reform", "Time dummy",
+                             "DiD estimator","Yrs of particip.","Mean v. c. US",
+                             "Mean v. c. China",
+                             "UNSC membership","BRI part.",
                              "Constant"),
           omit.stat=c("LL","ser","f"), no.space=TRUE)
 
