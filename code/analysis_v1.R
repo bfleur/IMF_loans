@@ -224,32 +224,54 @@ ur.df(window(TB3MS, c(1962, 1), c(2012, 4)),
 # 1. logit on loan particip
 library(foreign)
 
+cor(merged_raw9$quotash, merged_raw9$tr_bal_gdp, use = "complete.obs") # yes
+cor(merged_raw9$quotash, merged_raw9$debts_ratio, use = "complete.obs") # no
+
+cor(merged_raw9$BRI_part, merged_raw9$meanv_CHN, use = "complete.obs") # no
+cor(merged_raw9$BRI_part, merged_raw9$IM_fromCHN, use = "complete.obs") # no
+
+
 # all obs
 
-lgit1 <- glm(IMF_program ~ gdppc_gr + res_im + debts_ratio, family=binomial(link="logit"), data=merged_raw9) 
+lgit1 <- glm(IMF_program ~ gdppc_gr + res_im + debts_ratio + quotash, family=binomial(link="logit"), data=merged_raw9) 
 
-lgit2 <- glm(IMF_program ~ gdppc_gr + res_im + avg_part_yr, family=binomial(link="logit"), data=merged_raw9) 
+lgit2 <- glm(IMF_program ~ gdppc_gr + res_im + avg_part_yr + quotash, family=binomial(link="logit"), data=merged_raw9) 
 
 lgit3 <- glm(IMF_program ~ loggdppc + tr_bal_gdp + std_totald + gdpdefl, family=binomial(link="logit"), data=merged_raw9) 
 
 lgit4 <- glm(IMF_program ~ loggdppc + tr_bal_gdp + std_totald + gdpdefl + avg_part_yr, family=binomial(link="logit"), data=merged_raw9) 
 
-lgit5 <- glm(IMF_program ~ loggdppc + res_im + std_totald + gdpdefl + avg_part_yr + logpop, family=binomial(link="logit"), data=merged_raw9) 
+#lgit5 <- glm(IMF_program ~ loggdppc + res_im + std_totald + gdpdefl + avg_part_yr + logpop + quotash, family=binomial(link="logit"), data=merged_raw9) 
+
+lgit6 <- glm(IMF_program ~ loggdppc + res_im + debts_ratio + quotash, family=binomial(link="logit"), data=merged_raw9) 
+
+lgit7 <- glm(IMF_program ~ loggdppc + res_im + debts_ratio + quotash + avg_part_yr + logpop, family=binomial(link="logit"), data=merged_raw9) 
+
+#lgit8 <- glm(IMF_program ~ loggdppc + res_im + debts_ratio + quotash + gdpdefl + avg_part_yr + logpop, family=binomial(link="logit"), data=merged_raw9) 
 
 
 # extended
 
-lgit6 <- glm(IMF_program ~ loggdppc + res_im + std_totald 
+lgit9 <- glm(IMF_program ~ loggdppc + res_im + debts_ratio + quotash
              #+ avg_part_yr 
              + meanv_US + EX_toUS + IM_fromUS + sh_aid, family=binomial(link="logit"), data=merged_raw9)
 
-lgit7 <- glm(IMF_program ~ loggdppc + res_im + std_totald 
-             #+ avg_part_yr 
-             + meanv_CHN + EX_toCHN + IM_fromCHN + el_democr + BRI_part, family=binomial(link="logit"), data=merged_raw9)
+lgit10 <- glm(IMF_program ~ loggdppc + res_im + debts_ratio + quotash
+             + avg_part_yr + logpop + el_democr
+             + meanv_US + EX_toUS + IM_fromUS + sh_aid, family=binomial(link="logit"), data=merged_raw9)
 
-lgit8 <- glm(IMF_program ~ loggdppc + res_im + std_totald 
-             #+ avg_part_yr 
-             + unsc + BRI_part, family=binomial(link="logit"), data=merged_raw9)
+
+lgit11 <- glm(IMF_program ~ loggdppc + res_im + debts_ratio + quotash
+             #+ avg_part_yr + logpop
+             + meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part, family=binomial(link="logit"), data=merged_raw9)
+
+lgit12 <- glm(IMF_program ~ loggdppc + res_im + debts_ratio + quotash
+              + avg_part_yr + logpop
+              + meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part, family=binomial(link="logit"), data=merged_raw9)
+
+lgit13 <- glm(IMF_program ~ loggdppc + res_im + debts_ratio + quotash
+             + avg_part_yr 
+             + unsc + el_democr, family=binomial(link="logit"), data=merged_raw9)
 
 
 # summary
@@ -257,38 +279,92 @@ stargazer(lgit1, lgit2, lgit3, lgit4, lgit5,
           title="Logit estimates with main econ indep vars", type = "text", 
           out='logit15.txt')
 
-stargazer(lgit6, lgit7, lgit8,
+stargazer(lgit9, lgit10, lgit11, lgit12, lgit13,
           title="Logit estimates with control vars", type = "text", 
-          out='logit68.txt')
+          out='logit913.txt')
+#summary
+stargazer(lgit6, lgit7, lgit13, lgit10, lgit12, 
+          title="Logit estimates summary", type = "text", 
+          out='logitmix.txt')
+
+
+#huxreg("(1)"=lgit1, "(2)"=lgit2, "(3)"= lgit3, "(4)"=lgit4, "(5)"=lgit5,
+#       coefs = c("GDP/pc gr"="gdppc_gr", 
+#                 "Reserves"="res_im", 
+#                 "Debt s. ratio"="debts_ratio",
+#                 "Avg. yrs of particip."="avg_part_yr",
+#                 "Quotashare"="quotash",
+#                 "log population"="logpop",
+#                 "Log GDP/pc" = "loggdppc",
+#                 "Trade balance" = "tr_bal_gdp",
+#                 "ST debt to total debt" = "std_totald",
+#                 "Inflation" = "gdpdefl",
+#                 "Constant"= "(Intercept)" ),
+#       statistics = c(N = "nobs", R2 = "r.squared")
+#)
+
+#to_latex(logit1)
+
+stargazer(lgit9, lgit10, lgit11, lgit12,lgit13, title="Logit extended results",
+          align=TRUE, dep.var.labels=c("IMF program participation"),
+          covariate.labels=c("Log GDP/pc","Reserves","Debt s. ratio","Quotashare",
+                             "Avg. yrs of particip.",
+                             "log population","UN Sec. C. membership",
+                             "Electoral democracy", "Mean voting count w US", "Ex to US",
+                             "IM from US", "Share of aid","Mean voting count with China",
+                             "EX to China","IM from China","BRI participation", "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
+
+stargazer(lgit1, lgit2, lgit3, lgit4, title="Logit baseline results",
+          align=TRUE, dep.var.labels=c("IMF program participation"),
+          covariate.labels=c("GDP/pc gr","Reserves","Debt s. ratio","Avg. yrs of particip.",
+                             "Quotashare","log population","Log GDP/pc","Trade balance",
+                             "ST debt to total debt", "Inflation"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
+
+#summary of the two
+stargazer(lgit6, lgit7, lgit13, lgit10, lgit12, title="Logit results summary",
+          align=TRUE, dep.var.labels=c("IMF program participation"),
+          covariate.labels=c("Log GDP/pc","Reserves","Debt s. ratio","Quotashare",
+                             "Yrs of particip.",
+                             "log population","UNSC membership",
+                             "El. democracy", "Mean v. c. US", "Ex to US",
+                             "IM from US", "Share of aid","Mean v. c. China",
+                             "EX to China","IM from China","BRI part.", "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
 
 
 # 2. normal on loan size or Poisson? conditional!
 #lm1 <- reg_pov_a <- lm(poverty80 ~ dist_cutoff, data = transfers_a)
 
 # whole sample (as loansize is na at obs whithout loan, we do not cut the dset)
-lsize1 <- glm(formula=avg_yr_loansize ~ gdppc + res_im + debts_ratio,
+lsize1 <- glm(formula=avg_yr_loansize ~ loggdppc + res_im + debts_ratio +quotash,
               family=poisson(link="log"), data=merged_raw9)
 
-lsize2 <- glm(avg_yr_loansize ~ gdppc + std_totald + tr_bal_gdp + pop,
+lsize2 <- glm(avg_yr_loansize ~ gdppc_gr + std_totald + tr_bal_gdp + gdpdefl,
               family=poisson(link="log"), data=merged_raw9)
 
-lsize3 <- glm(avg_yr_loansize ~ gdppc_gr + res_im + debts_ratio + avg_part_yr,
+lsize3 <- glm(avg_yr_loansize ~ loggdppc + res_im + debts_ratio + avg_part_yr +gdpdefl + logpop + quotash,
               family=poisson(link="log"), data=merged_raw9)
 
-lsize4 <- glm(avg_yr_loansize ~ gdppc + std_totald + res_im + pop + avg_part_yr,
+lsize4 <- glm(avg_yr_loansize ~ gdppc_gr + std_totald +tr_bal_gdp + res_im + logpop + avg_part_yr +gdpdefl,
               family=poisson(link="log"), data=merged_raw9)
 
 # political
-lsize5 <- glm(formula=avg_yr_loansize ~ gdppc_gr + res_im + debts_ratio +
-                meanv_US + EX_toUS + IM_fromUS,
+lsize5 <- glm(formula=avg_yr_loansize ~ gdppc_gr + res_im + debts_ratio + quotash
+              #+avg_part_yr + el_democr + logpop
+                + meanv_US + EX_toUS + IM_fromUS + sh_aid,
               family=poisson(link="log"), data=merged_raw9)
 
-lsize6 <- glm(formula=avg_yr_loansize ~ gdppc + res_im +
-                meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part,
+lsize6 <- glm(formula=avg_yr_loansize ~ gdppc_gr + res_im + debts_ratio + quotash
+              + meanv_US + EX_toUS + IM_fromUS + sh_aid 
+              + meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part,
               family=poisson(link="log"), data=merged_raw9)
 
-lsize7 <- glm(formula=avg_yr_loansize ~ gdppc + res_im + debts_ratio +
-                + el_democr + unsc,
+lsize7 <- glm(formula=avg_yr_loansize ~ gdppc_gr + res_im + debts_ratio + quotash
+              + meanv_US + EX_toUS + IM_fromUS + sh_aid
+              + meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part
+              + avg_part_yr + el_democr + logpop +unsc,
               family=poisson(link="log"), data=merged_raw9)
 
 # summary
@@ -297,16 +373,48 @@ stargazer(lsize1, lsize2, lsize3, lsize4,
           out='lsize14.txt')
 
 stargazer(lsize5, lsize6, lsize7,
-          title="Logit estimates with control vars", type = "text", 
+          title="Loansize estimates with control vars", type = "text", 
           out='lsize57.txt')
 
+stargazer(lsize3, lsize4, lsize5, lsize7,
+          title="Loansize estimates with control vars", type = "text", 
+          out='lsizemix.txt')
+
+
+#latex output tables
+stargazer(lsize1, lsize2, lsize3, lsize4, title="Baseline results on loan size",
+          align=TRUE, dep.var.labels=c("Loan size"),
+          covariate.labels=c("Log GDP/pc","Reserves","Debt s. ratio","Yrs of particip.",
+                             "Quotashare","GDP/cap gr", "St debt to total","Trade bal.",
+                             "Inflation",
+                             "log population", "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
+
+stargazer(lsize5, lsize6, lsize7, title="Extended results on loan size",
+          align=TRUE, dep.var.labels=c("Loan size"),
+          covariate.labels=c("GDP/cap gr","Reserves","Debt s. ratio","Quotashare",
+                             "Mean v. c. US", "Ex to US", "IM from US", "Share of aid",
+                             "Mean v. c. China", "EX to China","IM from China","BRI part.",
+                             "Yrs of particip.","El. democracy", 
+                             "log population","UNSC membership", "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
+
+stargazer(lsize3, lsize4, lsize5, lsize7, title="Summary results on loan size",
+          align=TRUE, dep.var.labels=c("Loan size"),
+          covariate.labels=c("Log GDP/pc","GDP/cap gr","St debt to total","Trade bal.",
+                             "Reserves","Debt s. ratio","Yrs of particip.",
+                             "Inflation","El. democracy", "log population",
+                             "UNSC membership", "Quotashare",
+                             "Mean v. c. US", "Ex to US", "IM from US", "Share of aid",
+                             "Mean v. c. China", "EX to China","IM from China","BRI part.",
+                             "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
 
 
 # concessional
 # sample
 merged_raw9_conc <- merged_raw9 %>%
   filter(conc == 1)
-
 
 
 # non-concessional
@@ -320,76 +428,152 @@ merged_raw9_nonconc <- merged_raw9 %>%
 # subsequent program, we do not cut the dset)
 
 # word count of program documents
-wcount1 <- glm(formula=sumstok_P ~ gdppc + res_im + debts_ratio,
+wcount1 <- glm(formula=sumstok_P ~ loggdppc + res_im + debts_ratio +quotash,
               family=poisson(link="log"), data=merged_raw9)
 
-wcount2 <- glm(sumstok_P ~ fdi_ofgdp + std_totald + tr_bal_gdp + pop,
+wcount2 <- glm(sumstok_P ~ gdppc_gr + std_totald + tr_bal_gdp + gdpdefl,
               family=poisson(link="log"), data=merged_raw9)
 
-wcount3 <- glm(sumstok_P ~ gdppc_gr + res_im + debts_ratio + avg_part_yr,
+wcount3 <- glm(sumstok_P ~ loggdppc + res_im + debts_ratio + quotash + avg_part_yr +gdpdefl + logpop ,
               family=poisson(link="log"), data=merged_raw9)
 
-wcount4 <- glm(sumstok_P ~ gdppc + std_totald + res_im + pop + avg_part_yr,
+wcount4 <- glm(sumstok_P ~ gdppc_gr + std_totald +tr_bal_gdp + res_im + logpop + avg_part_yr +gdpdefl,
               family=poisson(link="log"), data=merged_raw9)
 
 # political
-wcount5 <- glm(sumstok_P ~ gdppc_gr + res_im + debts_ratio +
-                meanv_US + EX_toUS + IM_fromUS,
+wcount5 <- glm(sumstok_P ~ gdppc_gr + res_im + debts_ratio + quotash
+               #+avg_part_yr + el_democr + logpop
+               + meanv_US + EX_toUS + IM_fromUS + sh_aid,
               family=poisson(link="log"), data=merged_raw9)
 
-wcount6 <- glm(sumstok_P ~ gdppc + res_im +
-                meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part,
+wcount6 <- glm(sumstok_P ~ gdppc_gr + res_im + debts_ratio + quotash
+               + meanv_US + EX_toUS + IM_fromUS + sh_aid 
+               + meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part,
               family=poisson(link="log"), data=merged_raw9)
 
-wcount7 <- glm(sumstok_P ~ gdppc + res_im + debts_ratio +
-                + el_democr + unsc,
+wcount7 <- glm(sumstok_P ~ gdppc_gr + res_im + debts_ratio + quotash
+               + meanv_US + EX_toUS + IM_fromUS + sh_aid
+               + meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part
+               + avg_part_yr + el_democr + logpop +unsc,
               family=poisson(link="log"), data=merged_raw9)
 
 # summary
 stargazer(wcount1, wcount2, wcount3, wcount4,
-          title="wordcount regression estimates with main econ indep vars", type = "text", 
+          title="wordcount econ indep vars", type = "text", 
           out='wordcount14.txt')
 
 stargazer(wcount5, wcount6, wcount7,
-          title="wordcount estimates with control vars", type = "text", 
+          title="wordcount with control vars", type = "text", 
           out='wordcount57.txt')
+
+stargazer(wcount1, wcount3, wcount6, wcount7,
+          title="wordcount summary", type = "text", 
+          out='wordcountmix.txt')
+
+#latex output
+stargazer(wcount1, wcount2, wcount3, wcount4, title="Baseline results on word count",
+          align=TRUE, dep.var.labels=c("Sum word count"),
+          covariate.labels=c("Log GDP/pc","Reserves","Debt s. ratio",
+                             "Quotashare","GDP/cap gr", "St debt to total","Trade bal.",
+                             "Yrs of particip.","Inflation",
+                             "log population", "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
+
+stargazer(wcount5, wcount6, wcount7, title="Extended results on word count",
+          align=TRUE, dep.var.labels=c("Sum word count"),
+          covariate.labels=c("GDP/cap gr","Reserves","Debt s. ratio","Quotashare",
+                             "Mean v. c. US", "Ex to US", "IM from US", "Share of aid",
+                             "Mean v. c. China", "EX to China","IM from China","BRI part.",
+                             "Yrs of particip.","El. democracy", 
+                             "log population","UNSC membership", "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
+
+stargazer(wcount1, wcount3, wcount6, wcount7, title="Summary results on word count",
+          align=TRUE, dep.var.labels=c("Sum word count"),
+          covariate.labels=c("Log GDP/cap.", "GDP/cap gr",
+                             "Reserves","Debt s. ratio","Quotashare","Yrs of particip.",
+                             "Inflation","El. democracy", "log population",
+                             "UNSC membership", 
+                             "Mean v. c. US", "Ex to US", "IM from US", "Share of aid",
+                             "Mean v. c. China", "EX to China","IM from China","BRI part.",
+                             "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
+
+
+
 
 #################################
 # sentence count of program documents
-scount1 <- glm(sumssent_P ~ gdppc + res_im + debts_ratio,
+scount1 <- glm(sumssent_P ~ loggdppc + res_im + debts_ratio +quotash,
                family=poisson(link="log"), data=merged_raw9)
 
-scount2 <- glm(sumssent_P ~ fdi_ofgdp + std_totald + tr_bal_gdp + pop,
+scount2 <- glm(sumssent_P ~ gdppc_gr + std_totald + tr_bal_gdp + gdpdefl,
                family=poisson(link="log"), data=merged_raw9)
 
-scount3 <- glm(sumssent_P ~ gdppc_gr + res_im + debts_ratio + avg_part_yr,
+scount3 <- glm(sumssent_P ~ loggdppc + res_im + debts_ratio + quotash + avg_part_yr +gdpdefl + logpop ,
                family=poisson(link="log"), data=merged_raw9)
 
-scount4 <- glm(sumssent_P ~ gdppc + std_totald + res_im + pop + avg_part_yr,
+scount4 <- glm(sumssent_P ~ gdppc_gr + std_totald +tr_bal_gdp + res_im + logpop + avg_part_yr +gdpdefl,
                family=poisson(link="log"), data=merged_raw9)
 
 # political
-scount5 <- glm(sumssent_P ~ gdppc_gr + res_im + debts_ratio +
-                 meanv_US + EX_toUS + IM_fromUS,
+scount5 <- glm(sumssent_P ~ gdppc_gr + res_im + debts_ratio + quotash
+               #+avg_part_yr + el_democr + logpop
+               + meanv_US + EX_toUS + IM_fromUS + sh_aid,
                family=poisson(link="log"), data=merged_raw9)
 
-scount6 <- glm(sumssent_P ~ gdppc + res_im +
-                 meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part,
+scount6 <- glm(sumssent_P ~ gdppc_gr + res_im + debts_ratio + quotash
+               + meanv_US + EX_toUS + IM_fromUS + sh_aid 
+               + meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part,
                family=poisson(link="log"), data=merged_raw9)
 
-scount7 <- glm(sumssent_P ~ gdppc + res_im + debts_ratio +
-                 + el_democr + unsc,
+scount7 <- glm(sumssent_P ~ gdppc_gr + res_im + debts_ratio + quotash
+               + meanv_US + EX_toUS + IM_fromUS + sh_aid
+               + meanv_CHN + EX_toCHN + IM_fromCHN + BRI_part
+               + avg_part_yr + el_democr + logpop +unsc,
                family=poisson(link="log"), data=merged_raw9)
 
 # summary
-stargazer(scount1,scount2, scount3, scount4,
-          title="sentence count regression estimates with main econ indep vars", type = "text", 
+stargazer(scount1, scount2, scount3, scount4,
+          title="sentence count econ indep vars", type = "text", 
           out='sentcount14.txt')
 
 stargazer(scount5, scount6, scount7,
-          title="sentence count estimates with control vars", type = "text", 
+          title="sentence with control vars", type = "text", 
           out='sentcount57.txt')
 
+stargazer(scount1, scount3, scount6, scount7,
+          title="sentence summary", type = "text", 
+          out='sentcountmix.txt')
+
+#latex output
+stargazer(scount1, scount2, scount3, scount4, title="Baseline results on sentence count",
+          align=TRUE, dep.var.labels=c("Sum sentence count"),
+          covariate.labels=c("Log GDP/pc","Reserves","Debt s. ratio",
+                             "Quotashare","GDP/cap gr", "St debt to total","Trade bal.",
+                             "Yrs of particip.","Inflation",
+                             "log population", "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
+
+stargazer(scount5, scount6, scount7, title="Extended results on sentence count",
+          align=TRUE, dep.var.labels=c("Sum sentence count"),
+          covariate.labels=c("GDP/cap gr","Reserves","Debt s. ratio","Quotashare",
+                             "Mean v. c. US", "Ex to US", "IM from US", "Share of aid",
+                             "Mean v. c. China", "EX to China","IM from China","BRI part.",
+                             "Yrs of particip.","El. democracy", 
+                             "log population","UNSC membership", "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
+
+stargazer(scount1, scount3, scount6, scount7, title="Summary results on sentence count",
+          align=TRUE, dep.var.labels=c("Sum sentence count"),
+          covariate.labels=c("Log GDP/cap.", "GDP/cap gr",
+                             "Reserves","Debt s. ratio","Quotashare","Yrs of particip.",
+                             "Inflation","El. democracy", "log population",
+                             "UNSC membership", 
+                             "Mean v. c. US", "Ex to US", "IM from US", "Share of aid",
+                             "Mean v. c. China", "EX to China","IM from China","BRI part.",
+                             "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
 
 
 #---------------------------------------------------------------------------
@@ -457,9 +641,9 @@ ggplot(merged_raw9, aes(x = gdppc_gr, y = IMF_program,
   geom_smooth(method = "lm", se = FALSE, col = "black")
 
 # check on covariates
-cov <- c('loggdppc', 'res_im', 'debts_ratio', 'logpop', 'avg_part_yr', 'meanv_US',
+cov <- c('loggdppc', 'gdppc_gr', 'res_im', 'debts_ratio', 'pop', 'avg_part_yr', 'meanv_US',
          'meanv_CHN', 'el_democr', 'EX_toUS', 'IM_fromUS', 'EX_toCHN', 'IM_fromCHN',
-         'BRI_part')
+         'BRI_part', 'unsc')
 
 cov <- merged_raw9 %>%
   group_by(reform) %>%
@@ -467,12 +651,15 @@ cov <- merged_raw9 %>%
   summarise_all(funs(mean(., na.rm = T)))
 
 print(cov)
+write_xlsx(cov,"covbalance.xlsx")
+
 
 # matching
 library(MatchIt)
 # program part
-merged_raw9_nomiss <- merged_raw9 %>%  # MatchIt does not allow missing values
-  subset(select = c(iso3c, year, country_nr, IMF_program, reform, loggdppc, res_im, 
+merged_raw9_nom1 <- merged_raw9 %>%  # MatchIt does not allow missing values
+  subset(select = c(iso3c, year, country_nr, IMF_program, reform, loggdppc, gdppc_gr,
+                    res_im, sh_aid, unsc,
                     debts_ratio, logpop, avg_part_yr, meanv_US,
          meanv_CHN, el_democr, EX_toUS, IM_fromUS, EX_toCHN, IM_fromCHN,
          BRI_part)) %>%
@@ -480,10 +667,12 @@ merged_raw9_nomiss <- merged_raw9 %>%  # MatchIt does not allow missing values
 
 # loansize and counts
 merged_raw9_nom2 <- merged_raw9 %>%  # MatchIt does not allow missing values
-  subset(select = c(iso3c, year, country_nr, IMF_program, reform, loggdppc, res_im, 
+  subset(select = c(iso3c, year, country_nr, IMF_program, reform, loggdppc, gdppc_gr,
+                    res_im, sh_aid, unsc,
                     debts_ratio, logpop, avg_part_yr, meanv_US,
                     meanv_CHN, el_democr, EX_toUS, IM_fromUS, EX_toCHN, IM_fromCHN,
-                    BRI_part, avg_yr_loansize, sumstok_P, sumssent_P)) %>%
+                    BRI_part, avg_yr_loansize, avg_yr_loansize, logavg_yr_loansize, 
+                    sumstok_P, sumssent_P)) %>%
   na.omit()
 
 
@@ -491,7 +680,7 @@ merged_raw9_nom2 <- merged_raw9 %>%  # MatchIt does not allow missing values
 #                     method = "nearest", data = merged_raw9_nomiss)
 
 mod_match <- matchit(reform ~ logpop + el_democr + meanv_US + meanv_CHN,
-                     method = "nearest", data = merged_raw9_nomiss)
+                     method = "nearest", data = merged_raw9_nom1)
 
 mod_match2 <- matchit(reform ~ logpop + el_democr + meanv_US + meanv_CHN,
                      method = "nearest", data = merged_raw9_nom2)
@@ -511,37 +700,73 @@ love.plot(mod_match2, stars = "std")
 
 # parallel trend assumption! - matching takes care of it?
 
+# add interactions!!
+
 # program particip
 merged_raw9_matched <- merged_raw9_matched %>%
   mutate(t = ifelse(year >= 2016, 1, 0),
          interact = reform * t)
 
-Did_pp = lm(IMF_program ~ reform + t + interact, data = merged_raw9_matched)
-Did_pp
+Did_pp1 = glm(IMF_program ~ reform + t + interact, family=binomial(link="logit"), 
+              data = merged_raw9_matched)
+
+Did_pp1 <- glm(IMF_program ~ reform + t + interact
+              + avg_part_yr 
+              + unsc + el_democr, family=binomial(link="logit"), 
+              data=merged_raw9_matched)
+
 
 # loan size
 merged_raw9_matched2 <- merged_raw9_matched2 %>%
   mutate(t = ifelse(year >= 2016, 1, 0),
          interact = reform * t)
 
-Did_ls = lm(avg_yr_loansize ~ reform + t + interact, data = merged_raw9_matched2)
-Did_ls
+Did_ls1 = glm(avg_yr_loansize ~ reform + t + interact, family=poisson(link="log"), 
+              data = merged_raw9_matched2)
+
+Did_ls2 <- glm(avg_yr_loansize ~ reform + t + interact + avg_part_yr + logpop,
+               family=poisson(link="log"), data=merged_raw9)
 
 
 # word and sent count
-Did_tc = lm(sumstok_P ~ reform + t + interact, data = merged_raw9_matched2)
-Did_tc
+#Did_tc = lm(sumstok_P ~ reform + t + interact, data = merged_raw9_matched2)
+#Did_tc
 
-Did_sc = lm(sumssent_P ~ reform + t + interact, data = merged_raw9_matched2)
-Did_sc
+Did_wc1 = glm(sumstok_P ~ reform + t + interact, family=poisson(link="log"), 
+              data = merged_raw9_matched2)
+
+Did_wc1 = glm(sumstok_P ~ reform + t + interact + avg_part_yr + logpop, family=poisson(link="log"), 
+              data = merged_raw9_matched2)
+
+
+Did_sc1 = glm(sumssent_P ~ reform + t + interact, family=poisson(link="log"), 
+              data = merged_raw9_matched2)
+
+Did_sc2 = glm(sumssent_P ~ reform + t + interact + avg_part_yr + logpop, family=poisson(link="log"), 
+              data = merged_raw9_matched2)
 
 
 # summary
-stargazer(Did_pp,Did_ls, Did_tc, Did_sc,
-          title="DiD regression estimates", type = "text", 
-          out='DiD.txt')
+stargazer(Did_pp1,Did_pp2,Did_ls1,Did_ls2,
+          title="DiD program part. and loan size regression estimates", type = "text", 
+          out='DiDppls.txt')
 
+stargazer(Did_wc1,Did_wc2,Did_sc1,Did_sc1, 
+          title="DiD word and sentence count estimates", type = "text", 
+          out='DiDwcsc.txt')
 
+# latex output
+
+#stargazer(Did_pp2,Did_ls2,Did_wc2,Did_sc2, title="Summary results on DiD",
+          align=TRUE, dep.var.labels=c("Program part.","Loan size","Word count","Sentence count"),
+          covariate.labels=c("Log GDP/cap.", "GDP/cap gr",
+                             "Reserves","Debt s. ratio","Quotashare","Yrs of particip.",
+                             "Inflation","El. democracy", "log population",
+                             "UNSC membership", 
+                             "Mean v. c. US", "Ex to US", "IM from US", "Share of aid",
+                             "Mean v. c. China", "EX to China","IM from China","BRI part.",
+                             "Constant"),
+          omit.stat=c("LL","ser","f"), no.space=TRUE)
 
 
 
